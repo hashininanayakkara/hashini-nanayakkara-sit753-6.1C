@@ -1,0 +1,101 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Task: Building the code...'
+                echo 'Tool: Maven (mvn)'
+            }
+        }
+
+        stage('Unit and Integration Tests') {
+            steps {
+                echo 'Task: Running unit and integration tests...'
+                echo 'Tool: Maven (mvn test)'
+            }
+            post {
+                success {
+                    emailext(
+                        subject: "Pipeline Success: Unit and Integration Tests Passed - ${env.JOB_NAME} [${env.BUILD_NUMBER}]",
+                        body: "The unit and integration tests have passed. Please check the attached logs for details.",
+                        // recipientProviders: [[$class: 'DevelopersRecipientProvider']],
+                        to:"zoom4b11@gmail.com",
+                        attachLog: true
+                    )
+                }
+                failure {
+                    emailext(
+                        subject: "Pipeline Failure: Unit and Integration Tests Failed - ${env.JOB_NAME} [${env.BUILD_NUMBER}]",
+                        body: "The unit and integration tests have failed. Please check the attached logs for details.",
+                        to:"zoom4b11@gmail.com",
+                        //recipientProviders: [[$class: 'DevelopersRecipientProvider']],
+                        attachLog: true
+                    )
+                }
+            }
+        }
+
+        stage('Code Analysis') {
+            steps {
+                echo 'Task: Analyzing the code...'
+                echo 'Tool: SonarQube (mvn sonar:sonar)'
+            }
+        }
+
+        stage('Security Scan') {
+            steps {
+                echo 'Task: Running security scan...'
+                echo 'Tool: OWASP Dependency Check (dependency-check.sh)'
+            }
+            post {
+                success {
+                    emailext(
+                        subject: "Pipeline Success: Security Scan Passed - ${env.JOB_NAME} [${env.BUILD_NUMBER}]",
+                        body: "The security scan has passed. Please check the attached logs for details.",
+                        to:"zoom4b11@gmail.com",
+                        //recipientProviders: [[$class: 'DevelopersRecipientProvider']],
+                        attachLog: true
+                    )
+                }
+                failure {
+                    emailext(
+                        subject: "Pipeline Failure: Security Scan Failed - ${env.JOB_NAME} [${env.BUILD_NUMBER}]",
+                        body: "The security scan has failed. Please check the attached logs for details.",
+                        to:"zoom4b11@gmail.com",
+                        //recipientProviders: [[$class: 'DevelopersRecipientProvider']],
+                        attachLog: true
+                    )
+                }
+            }
+        }
+
+        stage('Deploy to Staging') {
+            steps {
+                echo 'Task: Deploying to staging...'
+                echo 'Tool: Ansible (ansible-playbook)'
+            }
+        }
+
+        stage('Integration Tests on Staging') {
+            steps {
+                echo 'Task: Running integration tests on staging...'
+                echo 'Tool: Custom Test Script (run_tests.sh)'
+            }
+        }
+
+        stage('Deploy to Production') {
+            steps {
+                echo 'Task: Deploying to production...'
+                echo 'Tool: Ansible (ansible-playbook)'
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Cleaning up workspace...'
+            deleteDir() // clean up our workspace
+        }
+    }
+}
